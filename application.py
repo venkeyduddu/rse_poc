@@ -1,10 +1,10 @@
 from flask import Flask
-app = Flask(__name__)
 
-@app.route('/')
-def hello_world():
+application = Flask(__name__)
 
-   return "Hello World"
+@application.route("/")
+def home():
+    return "Hello, World!!!"
 
-if __name__ == '__main__':
-   app.run()
+if __name__ == "__main__":
+    application.run()
