@@ -5,6 +5,11 @@ from datetime import datetime
 
 
 try:
+	# connection = mysql.connector.connect(
+	# 	host='localhost',
+	#     database='rse_local',
+	#     user='root',
+	#     password='root')
 	connection = mysql.connector.connect(
 		host='localhost',
 	    database='rse_local',
@@ -53,6 +58,7 @@ def insert_into_resume(data):
 	else:
 		dl.append("")
 	now = datetime.now()
+	dl.append(data.get("experience").get("years"))
 	str_time = now.strftime("%Y-%m-%d %H:%M:%S")
 	dl.append(str_time)
 	dl.append(str_time)
@@ -63,7 +69,7 @@ def insert_into_resume(data):
 		dl.append(1)
 	try:
 		cursor = connection.cursor(prepared=True)
-		sql_insert_query ="""INSERT INTO `resume`(`userId`,`folderId`,`first_name`,`middle_name`,`last_name`,`email_id`,`phone_number`,`address`,`zip_code`,`experience`,`current_role`,`previous_role`,`degree_type`,`institution_name`,`specialization`,`status`,`deletedAt`,`createdAt`,`updatedAt`,`cityId`,`stateId`,`countryId`,`visaTagId`,`folderFileId`)VALUES (1,1,%s," "," ",%s,%s,%s," ",1," "," "," "," "," ",1,%s,%s,%s,1,1,1,%s,1)"""
+		sql_insert_query ="""INSERT INTO `resume`(`userId`,`folderId`,`first_name`,`middle_name`,`last_name`,`email_id`,`phone_number`,`address`,`zip_code`,`experience`,`current_role`,`previous_role`,`degree_type`,`institution_name`,`specialization`,`status`,`deletedAt`,`createdAt`,`updatedAt`,`cityId`,`stateId`,`countryId`,`visaTagId`,`folderFileId`)VALUES (1,1,%s," "," ",%s,%s,%s," ",%s," "," "," "," "," ",1,%s,%s,%s,1,1,1,%s,1)"""
 		result  = cursor.execute(sql_insert_query, dl)
 		connection.commit()
 		print(result)

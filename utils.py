@@ -18,6 +18,8 @@ from urllib.parse import urlparse
 from db_utils import save_data_db, get_skills_from_db, get_visa_tags_from_db
 from urllib.request import urlopen
 from datetime import datetime
+import datefinder
+from dateutil.relativedelta import relativedelta
 
 
 
@@ -134,6 +136,19 @@ def extract_file_details(url, filename, filesize):
 
     return data
 
+def extract_experience(text):
+    data = {}
+    dates = list(datefinder.find_dates(text))
+    if dates:
+        sorted_dates = sorted(dates)
+        print(sorted_dates)
+        rdelta = relativedelta(sorted_dates[-1], sorted_dates[0])
+        data["years"] = rdelta.years
+    else:
+        data["years"] = 1
+
+    return data
+
 
 
 def read_pdf_from_url(url):
@@ -155,6 +170,7 @@ def read_pdf_from_url(url):
                 temp_text.write(txt)
         temp_text.seek(0)
     return temp_text, file_name, file_size
+
 
 def get_filename_from_url(url):
     a = urlparse(url)
@@ -207,8 +223,10 @@ def get_data_from_pdf(url):
     data["skills"] = skills
     visatags, db_visatags_dict = extract_visatags(text)
     data["visatags"] = visatags
+    data["experience"] = extract_experience(text)
     db_report = save_data_db(data, db_skills_dict)
     data["db_report"] = db_report
+    extract_experience(text)
 
     return data
 
