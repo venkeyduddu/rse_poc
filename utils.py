@@ -15,14 +15,12 @@ import requests
 import io
 import pyap
 from urllib.parse import urlparse
-from db_utils import save_data_db
+from db_utils import save_data_db, get_skills_from_db, get_visa_tags_from_db
+from urllib.request import urlopen
+from datetime import datetime
 
 
 
-# connection = mysql.connector.connect(host='localhost',
-#                              database='getinfy_resumes',
-#                              user='root',
-#                              password='Akshata127$')
 
 def get_human_names(text):
     person_list = []
@@ -64,7 +62,7 @@ def equal(a):
 
 
 def extract_person_details(text):
-    text= text.read().rstrip()
+    text= text.rstrip()
     name = get_human_names(text)
     emails = re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", text)
     emails1=emails[0]
@@ -78,8 +76,9 @@ def extract_person_details(text):
     return person_details
 
 
-def extract_adresses(text):
-    text= text.read().rstrip()
+def extract_adresses(text, person_details):
+    contact = person_details.get("contacts")[0]
+    text= text.rstrip()
     addresses = pyap.parse(text, country='US')
     address_list=[]
     address_dict=[]
@@ -109,10 +108,13 @@ def extract_adresses(text):
                 address=address_list[0]
                 break
 
+    if address_list:
+        address_list = [str(x) for x in address_list]
+
     return address_list
 
 
-def extract_file_details(filename, filesize):
+def extract_file_details(url, filename, filesize):
     data = {}
     data["filesize"] = filesize
     split_tup = os.path.splitext(filename)
@@ -120,6 +122,15 @@ def extract_file_details(filename, filesize):
     file_extension = split_tup[1]
     data["filename"] = file_name
     data["file_extension"] = file_extension
+
+    try:
+        f = urlopen(url)
+        i = f.info()
+        fdt = i["Last-Modified"]
+        fdt = datetime.strptime(fdt, '%a, %d %b %Y %H:%M:%S GMT')
+        print(fdt)
+    except:
+        pass
 
     return data
 
@@ -150,14 +161,53 @@ def get_filename_from_url(url):
     return os.path.basename(a.path)
 
 
+def extract_skills(text):
+    text_string = text.lower()
+    match_pattern = re.findall(r'\b[a-z]{1,15}\b', text_string)
+    db_skills_dict = get_skills_from_db()
+    data = {}
+    if db_skills_dict.keys():
+        for word in match_pattern:
+            if word in db_skills_dict.keys():
+                count = data.get(word,0)
+                data[word] = count + 1
+
+    print(data)
+    return data, db_skills_dict
+
+
+def extract_visatags(text):
+    text_string = text.lower()
+    db_visatags_dict = get_visa_tags_from_db()
+    data = []
+    if db_visatags_dict.keys():
+        for each in db_visatags_dict.keys():
+            for line in text_string.split("\n"):
+                if each in line and "visa" in line:
+                    data.append(each)
+                    data.append(db_visatags_dict.get(each))
+                    data.append(line)
+                else:
+                    continue
+    print(data)
+    return data, db_visatags_dict
+
+
+
 def get_data_from_pdf(url):
     text, filename, filesize = read_pdf_from_url(url)
+    text = text.read()
     data = {}
-    data["person_details"] = extract_person_details(text)
-    data["file_details"] = extract_file_details(filename, filesize)
-    data["addresses"] = extract_adresses(text)
-    db_report = save_data_db(data)
-
+    person_details = extract_person_details(text)
+    data["person_details"] = person_details
+    data["file_details"] = extract_file_details(url, filename, filesize)
+    addresses = extract_adresses(text, person_details)
+    data["addresses"] = addresses
+    skills, db_skills_dict = extract_skills(text)
+    data["skills"] = skills
+    visatags, db_visatags_dict = extract_visatags(text)
+    data["visatags"] = visatags
+    db_report = save_data_db(data, db_skills_dict)
     data["db_report"] = db_report
 
     return data
