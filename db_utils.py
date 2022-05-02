@@ -11,10 +11,10 @@ try:
 	#     user='root',
 	#     password='root')
 	connection = mysql.connector.connect(
-		host='localhost',
-	    database='rse_local',
-	    user='root',
-	    password='root')
+		host='database-1.clahdthlrwqq.ap-south-1.rds.amazonaws.com',
+	    database='resume_search',
+	    user='admin',
+	    password='kinpass7271')
 	connection_status = True
 except Error:
 	connection_status = False
